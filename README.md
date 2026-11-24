@@ -22,13 +22,24 @@ The caption is generic and only partly right, which is typical for a small model
 
 ## Results
 
-| Model | Data | Metric | Score |
-|---|---|---|---|
-| Xception + LSTM, after 25 epochs | Flickr30k, first 1,000 test images | BLEU-1 / BLEU-2 | **0.574 / 0.329** |
-| Xception + LSTM, after more training | Flickr30k, first 1,000 test images | BLEU-1 / BLEU-2 | **0.582 / 0.338** |
-| GIT-base fine-tuning | Flickr8k | none recorded | run stopped by GPU memory during the first evaluation |
+**Fine-tuned GIT-base (Flickr8k, 500 held-out test images, 4-beam search)**
 
-BLEU uses whitespace tokens and greedy decoding, so these numbers are not comparable to published benchmarks. Training token accuracy for the LSTM ended around 39 to 43%.
+| Metric | Pretrained GIT-base | After fine-tuning |
+|---|---|---|
+| BLEU-1 | 0.5409 | **0.7458** |
+| BLEU-2 | 0.3900 | **0.5884** |
+| BLEU-3 | 0.2740 | **0.4525** |
+| BLEU-4 | 0.1917 | **0.3421** |
+| ROUGE-L | 0.4249 | **0.5543** |
+
+**Xception + LSTM (Flickr30k, first 1,000 test images, greedy decoding)**
+
+| Model | BLEU-1 | BLEU-2 |
+|---|---|---|
+| after 25 epochs | 0.574 | 0.329 |
+| after more training | **0.582** | **0.338** |
+
+The two tables are not directly comparable: they use different datasets, test sets, decoding and tokenization. Scores are from a single training run and do not match published benchmarks. LSTM training token accuracy ended around 39 to 43%.
 
 ## Approach 1: Xception + LSTM (from scratch)
 
@@ -53,14 +64,14 @@ flowchart LR
 
 ## Approach 2: fine-tuning GIT-base
 
-Notebook: [`image-caption-generator-git.ipynb`](image-caption-generator-git.ipynb) ([view on Kaggle](https://www.kaggle.com/code/a7medesmail162/image-caption-generator-transformer-v6))
+Notebook: [`image-captioning-flickr8k-git-finetuning.ipynb`](image-captioning-flickr8k-git-finetuning.ipynb) ([view on Kaggle](https://www.kaggle.com/code/ahmedesmail16/image-captioning-on-flickr8k-fine-tuning))
 
-[GIT](https://huggingface.co/microsoft/git-base) is a pretrained image-to-text transformer from Microsoft.
+[GIT](https://huggingface.co/microsoft/git-base) is a pretrained image-to-text transformer from Microsoft. The notebook measures it before and after fine-tuning on the same held-out images.
 
-- **Data:** Flickr8k, 99% train and 1% test.
-- **Setup:** Hugging Face `Trainer`, learning rate 5e-5, batch size 16 with gradient accumulation 16, 5 epochs planned, WER as the planned metric.
-- **What happened:** about one epoch ran, then a CUDA out-of-memory error hit the first evaluation on a 16 GB Kaggle GPU, so no validation score was recorded.
-- **Output:** the notebook ends with example captions, for example "a brown and white dog runs through the grass". They are qualitative examples, not measured results. GIT-base already captions well before fine-tuning.
+- **Data:** Flickr8k, five captions per image, split by image: 7,391 train, 200 validation, 500 test images.
+- **Training:** Hugging Face `Trainer`, learning rate 5e-5, batch size 8 with gradient accumulation 4 (effective batch 32), mixed precision (fp16), 3 epochs. The epoch with the lowest validation loss is kept (validation loss 2.130, 2.074, 2.051).
+- **Evaluation:** 4-beam search, BLEU-1 to BLEU-4 and ROUGE-L against all five reference captions of each test image.
+- **Result:** BLEU-4 rose from 0.19 to 0.34 and ROUGE-L from 0.42 to 0.55. Part of the quality comes from GIT's pretraining: the model already scored BLEU-1 0.54 before fine-tuning.
 
 ## How to run
 
@@ -70,10 +81,12 @@ Notebook: [`image-caption-generator-git.ipynb`](image-caption-generator-git.ipyn
 
 ## Project story
 
-I built the LSTM first to understand how a decoder learns language one word at a time, using a data generator so the dataset fits in memory. Then I used a pretrained transformer (GIT) to compare. Both notebooks are kept as they were run.
+I built the LSTM first to understand how a decoder learns language one word at a time, using a data generator so the dataset fits in memory. Then I fine-tuned a pretrained transformer (GIT) and measured it against its own starting point. Both notebooks are kept as they were run.
 
 ## Limitations
 
-- BLEU on 1,000 test images only. No beam search, no CIDEr or ROUGE, no human evaluation.
-- The two approaches use different datasets (Flickr30k and Flickr8k), so they cannot be compared directly yet.
+- Single training run with one random seed, so small differences between runs are not meaningful.
+- BLEU and ROUGE-L reward word overlap with the reference captions. They do not measure whether a caption is correct, and no CIDEr or human evaluation was done.
+- The LSTM and GIT results use different datasets and evaluation settings (Flickr30k vs Flickr8k, greedy vs beam search), so they cannot be compared directly.
+- Flickr8k is small and mostly shows people, dogs and outdoor scenes. The model may caption other kinds of images poorly.
 - No demo app or saved model in this repository.
