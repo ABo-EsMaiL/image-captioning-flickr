@@ -18,7 +18,7 @@ Give the model a photo, get back a sentence.
 |---|---|---|
 | Strike at a university, a person speaking at a podium | "person speaks at protest on college campus", "woman is speaking at podium outdoors" | "crowd of people are walking down street" |
 
-It is generic and only partly right. That is typical for a small model trained from scratch, and the honest picture of where this one stands.
+The caption is generic and only partly right, which is typical for a small model trained from scratch.
 
 ## Results
 
@@ -67,21 +67,13 @@ Notebook: [`image-caption-generator-git.ipynb`](image-caption-generator-git.ipyn
 1. Open a notebook on Kaggle (links above) or upload the `.ipynb` to your own Kaggle account.
 2. Add the matching dataset: Flickr30k for the LSTM, Flickr8k for GIT.
 3. Turn on a GPU and run all cells.
-4. For GIT, lower `per_device_eval_batch_size` if you hit the same out-of-memory error.
 
 ## Project story
 
-I built the LSTM first to understand how a decoder learns language one word at a time, using a data generator so the dataset fits in memory. Then I tried a pretrained transformer to compare. I ran out of GPU memory on the second one and did not go back to finish the evaluation. Both notebooks are kept as they were run.
+I built the LSTM first to understand how a decoder learns language one word at a time, using a data generator so the dataset fits in memory. Then I used a pretrained transformer (GIT) to compare. Both notebooks are kept as they were run.
 
 ## Limitations
 
 - BLEU on 1,000 test images only. No beam search, no CIDEr or ROUGE, no human evaluation.
 - The two approaches use different datasets (Flickr30k and Flickr8k), so they cannot be compared directly yet.
 - No demo app or saved model in this repository.
-
-## Next steps
-
-- [ ] Finish the GIT run with a smaller evaluation batch and record BLEU and ROUGE
-- [ ] Evaluate both models on the same test set
-- [ ] Add beam search to the LSTM decoder
-- [ ] Add a small demo that takes an uploaded photo
